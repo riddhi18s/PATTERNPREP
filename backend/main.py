@@ -21,6 +21,10 @@ from progress import (
     router as progress_router,
 )
 
+from shared_tests import (
+    router as shared_tests_router,
+)
+
 
 load_dotenv()
 
@@ -32,7 +36,7 @@ models.Base.metadata.create_all(
 
 app = FastAPI(
     title="PatternPrep API",
-    version="1.0.0",
+    version="1.1.0",
 )
 
 
@@ -82,6 +86,11 @@ app.include_router(
 
 app.include_router(
     progress_router
+)
+
+
+app.include_router(
+    shared_tests_router
 )
 
 

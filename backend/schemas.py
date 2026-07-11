@@ -136,6 +136,30 @@ class MockTestResponse(
     ]
 
 
+class SharedTestCreate(
+    BaseModel
+):
+    test_data: dict[
+        str,
+        Any
+    ]
+
+
+class SharedTestResponse(
+    BaseModel
+):
+    share_code: str
+
+    creator_name: str
+
+    created_at: datetime
+
+    test_data: dict[
+        str,
+        Any
+    ]
+
+
 class MessageResponse(
     BaseModel
 ):

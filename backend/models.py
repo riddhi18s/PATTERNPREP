@@ -162,3 +162,43 @@ class MockTest(Base):
             )
         ),
     )
+
+
+class SharedTest(Base):
+    __tablename__ = "shared_tests"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    creator_id = Column(
+        Integer,
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False,
+        index=True
+    )
+
+    share_code = Column(
+        String,
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    test_data = Column(
+        Text,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=lambda: datetime.now(
+            timezone.utc
+        ),
+        nullable=False
+    )

@@ -16,6 +16,7 @@ import PreparationSetupPage from "./pages/PreparationSetupPage";
 import QuestionSelectionPage from "./pages/QuestionSelectionPage";
 import TestConfigurationPage from "./pages/TestConfigurationPage";
 import TestPreviewPage from "./pages/TestPreviewPage";
+import JoinTestPage from "./pages/JoinTestPage";
 import MockTestPage from "./pages/MockTestPage";
 import TestResultPage from "./pages/TestResultPage";
 import TestHistoryPage from "./pages/TestHistoryPage";
@@ -96,6 +97,13 @@ function App() {
           path="/test-preview"
           element={
             <TestPreviewPage />
+          }
+        />
+
+        <Route
+          path="/join-test/:shareCode"
+          element={
+            <JoinTestPage />
           }
         />
 

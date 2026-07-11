@@ -8,14 +8,47 @@ import {
 } from "react-router-dom";
 
 
+const API_URL =
+  "https://patternprep.onrender.com";
+
+
 function TestPreviewPage() {
   const navigate =
     useNavigate();
 
 
+  const [
+    isSharing,
+    setIsSharing,
+  ] = useState(false);
+
+
+  const [
+    shareCode,
+    setShareCode,
+  ] = useState("");
+
+
+  const [
+    shareLink,
+    setShareLink,
+  ] = useState("");
+
+
+  const [
+    shareMessage,
+    setShareMessage,
+  ] = useState("");
+
+
+  const [
+    shareError,
+    setShareError,
+  ] = useState("");
+
+
   const [mockTest] =
     useState(() => {
-
       const savedTest =
         localStorage.getItem(
           "generatedMockTest"
@@ -28,25 +61,19 @@ function TestPreviewPage() {
 
 
       try {
-
         return JSON.parse(
           savedTest
         );
 
       } catch {
-
         return null;
-
       }
-
     });
 
 
   const testSummary =
     useMemo(() => {
-
       if (!mockTest) {
-
         return {
           solved: 0,
           unsolved: 0,
@@ -54,7 +81,6 @@ function TestPreviewPage() {
           medium: 0,
           hard: 0,
         };
-
       }
 
 
@@ -62,18 +88,13 @@ function TestPreviewPage() {
         Array.isArray(
           mockTest.questions
         )
-
           ?
-
           mockTest.questions
-
           :
-
           [];
 
 
       return {
-
         solved:
           questions.filter(
             (question) =>
@@ -81,14 +102,12 @@ function TestPreviewPage() {
                 .previouslySolved
           ).length,
 
-
         unsolved:
           questions.filter(
             (question) =>
               !question
                 .previouslySolved
           ).length,
-
 
         easy:
           questions.filter(
@@ -100,7 +119,6 @@ function TestPreviewPage() {
               "easy"
           ).length,
 
-
         medium:
           questions.filter(
             (question) =>
@@ -111,7 +129,6 @@ function TestPreviewPage() {
               "medium"
           ).length,
 
-
         hard:
           questions.filter(
             (question) =>
@@ -121,7 +138,6 @@ function TestPreviewPage() {
               ===
               "hard"
           ).length,
-
       };
 
     }, [
@@ -130,9 +146,7 @@ function TestPreviewPage() {
 
 
   if (!mockTest) {
-
     return (
-
       <main
         className={
           "preview-empty-page"
@@ -166,9 +180,7 @@ function TestPreviewPage() {
               "preview-empty-eyebrow"
             }
           >
-
             NO GENERATED TEST
-
           </span>
 
 
@@ -178,11 +190,9 @@ function TestPreviewPage() {
 
 
           <p>
-
             Create a new mock-test
             configuration before
             opening the preview.
-
           </p>
 
 
@@ -207,9 +217,7 @@ function TestPreviewPage() {
         </section>
 
       </main>
-
     );
-
   }
 
 
@@ -223,22 +231,16 @@ function TestPreviewPage() {
     Array.isArray(
       mockTest.questions
     )
-
       ?
-
       mockTest.questions
-
       :
-
       [];
 
 
   const difficultyDistribution =
     configuration
       .difficultyDistribution
-
     ||
-
     {};
 
 
@@ -247,45 +249,185 @@ function TestPreviewPage() {
       configuration
         .selectedTopics
     )
-
       ?
-
       configuration
         .selectedTopics
-
       :
-
       [];
 
 
-  function handleStartTest() {
+  async function handleShareTest() {
+    const accessToken =
+      localStorage.getItem(
+        "accessToken"
+      );
 
+
+    if (!accessToken) {
+      navigate(
+        "/login",
+        {
+          replace: true,
+        }
+      );
+
+      return;
+    }
+
+
+    setIsSharing(
+      true
+    );
+
+    setShareError("");
+
+    setShareMessage("");
+
+
+    try {
+      const response =
+        await fetch(
+          `${API_URL}/shared-tests`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${accessToken}`,
+            },
+
+            body:
+              JSON.stringify({
+                test_data:
+                  mockTest,
+              }),
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        response.status
+        ===
+        401
+      ) {
+        localStorage.removeItem(
+          "accessToken"
+        );
+
+        localStorage.removeItem(
+          "user"
+        );
+
+        navigate(
+          "/login",
+          {
+            replace: true,
+          }
+        );
+
+        return;
+      }
+
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail
+          ||
+          "Could not create the shared test."
+        );
+      }
+
+
+      const generatedLink =
+        `${
+          window.location.origin
+        }/join-test/${
+          data.share_code
+        }`;
+
+
+      setShareCode(
+        data.share_code
+      );
+
+      setShareLink(
+        generatedLink
+      );
+
+      setShareMessage(
+        "Your shared test is ready. Send this link to your friend."
+      );
+
+    } catch (
+      error
+    ) {
+      setShareError(
+        error.message
+        ||
+        "Could not create the share link."
+      );
+
+    } finally {
+      setIsSharing(
+        false
+      );
+    }
+  }
+
+
+  async function handleCopyLink() {
+    if (!shareLink) {
+      return;
+    }
+
+
+    try {
+      await navigator
+        .clipboard
+        .writeText(
+          shareLink
+        );
+
+
+      setShareMessage(
+        "Link copied. Send it to your friend."
+      );
+
+    } catch {
+      setShareMessage(
+        "Copy the link manually from the box."
+      );
+    }
+  }
+
+
+  function handleStartTest() {
     const startedAt =
       Date.now();
 
 
     const endTime =
       startedAt
-
       +
-
       Number(
         configuration.duration
         ||
         60
       )
-
       *
-
       60
-
       *
-
       1000;
 
 
     const activeMockTest = {
-
       ...mockTest,
 
       status:
@@ -296,30 +438,25 @@ function TestPreviewPage() {
       endTime,
 
       responses: {},
-
     };
 
 
     localStorage.setItem(
-
       "activeMockTest",
 
       JSON.stringify(
         activeMockTest
       )
-
     );
 
 
     navigate(
       "/mock-test"
     );
-
   }
 
 
   return (
-
     <main
       className={
         "preview-page"
@@ -461,9 +598,7 @@ function TestPreviewPage() {
               "preview-eyebrow"
             }
           >
-
             YOUR TEST IS READY
-
           </span>
 
 
@@ -479,7 +614,6 @@ function TestPreviewPage() {
 
 
           <p>
-
             Check the test structure,
             difficulty distribution,
             selected topics, and
@@ -487,7 +621,6 @@ function TestPreviewPage() {
             The timer will begin only
             after you select Start
             Mock Test.
-
           </p>
 
 
@@ -521,19 +654,133 @@ function TestPreviewPage() {
               className={
                 "preview-edit-button"
               }
+              disabled={
+                isSharing
+              }
               onClick={
-                () =>
-                  navigate(
-                    "/test-configuration"
-                  )
+                handleShareTest
               }
             >
 
-              Edit Configuration
+              {
+                isSharing
+                  ?
+                  "Creating Share Link..."
+                  :
+                  "Share Test"
+              }
 
             </button>
 
           </div>
+
+
+          {
+            (
+              shareCode
+              ||
+              shareError
+            )
+
+            &&
+
+            (
+              <div
+                className={
+                  "preview-share-card"
+                }
+              >
+
+                {
+                  shareError
+
+                    ?
+
+                    (
+                      <p
+                        className={
+                          "preview-share-error"
+                        }
+                      >
+                        {shareError}
+                      </p>
+                    )
+
+                    :
+
+                    (
+                      <>
+
+                        <div
+                          className={
+                            "preview-share-heading"
+                          }
+                        >
+
+                          <div>
+
+                            <span>
+                              SHARE CODE
+                            </span>
+
+
+                            <strong>
+                              {shareCode}
+                            </strong>
+
+                          </div>
+
+
+                          <span>
+                            ✓ Ready
+                          </span>
+
+                        </div>
+
+
+                        <p>
+                          {shareMessage}
+                        </p>
+
+
+                        <div
+                          className={
+                            "preview-share-link"
+                          }
+                        >
+
+                          <input
+                            type="text"
+                            value={
+                              shareLink
+                            }
+                            readOnly
+                            aria-label={
+                              "Shared test link"
+                            }
+                          />
+
+
+                          <button
+                            type="button"
+                            onClick={
+                              handleCopyLink
+                            }
+                          >
+
+                            Copy Link
+
+                          </button>
+
+                        </div>
+
+                      </>
+                    )
+                }
+
+              </div>
+            )
+          }
 
         </div>
 
@@ -571,12 +818,10 @@ function TestPreviewPage() {
           >
 
             <strong>
-
               {
                 configuration
                   .duration
               }
-
             </strong>
 
 
@@ -605,13 +850,10 @@ function TestPreviewPage() {
             <div>
 
               <strong>
-
                 {
                   questions.length
                 }
-
               </strong>
-
 
               <span>
                 Questions
@@ -623,14 +865,11 @@ function TestPreviewPage() {
             <div>
 
               <strong>
-
                 {
                   selectedTopics
                     .length
                 }
-
               </strong>
-
 
               <span>
                 Topics
@@ -642,14 +881,11 @@ function TestPreviewPage() {
             <div>
 
               <strong>
-
                 {
                   configuration
                     .testMode
                 }
-
               </strong>
-
 
               <span>
                 Mode
@@ -691,15 +927,11 @@ function TestPreviewPage() {
               TOTAL QUESTIONS
             </small>
 
-
             <strong>
-
               {
                 questions.length
               }
-
             </strong>
-
 
             <p>
               Generated for this test
@@ -731,16 +963,12 @@ function TestPreviewPage() {
               PREVIOUSLY SOLVED
             </small>
 
-
             <strong>
-
               {
                 testSummary
                   .solved
               }
-
             </strong>
-
 
             <p>
               Revision questions
@@ -772,16 +1000,12 @@ function TestPreviewPage() {
               NEW QUESTIONS
             </small>
 
-
             <strong>
-
               {
                 testSummary
                   .unsolved
               }
-
             </strong>
-
 
             <p>
               New challenges
@@ -813,16 +1037,12 @@ function TestPreviewPage() {
               TIME LIMIT
             </small>
 
-
             <strong>
-
               {
                 configuration
                   .duration
               }
-
             </strong>
-
 
             <p>
               Minutes available
@@ -853,18 +1073,14 @@ function TestPreviewPage() {
               TEST STRUCTURE
             </span>
 
-
             <h2>
               Your test at a glance
             </h2>
 
-
             <p>
-
               Review the selected
               mode, difficulty mix,
               and included topics.
-
             </p>
 
           </div>
@@ -917,7 +1133,6 @@ function TestPreviewPage() {
                   Easy
                 </strong>
 
-
                 <small>
                   Foundation
                 </small>
@@ -928,7 +1143,6 @@ function TestPreviewPage() {
 
 
             <strong>
-
               {
                 difficultyDistribution
                   .Easy
@@ -938,7 +1152,6 @@ function TestPreviewPage() {
                 testSummary
                   .easy
               }
-
             </strong>
 
           </article>
@@ -967,7 +1180,6 @@ function TestPreviewPage() {
                   Medium
                 </strong>
 
-
                 <small>
                   Interview level
                 </small>
@@ -978,7 +1190,6 @@ function TestPreviewPage() {
 
 
             <strong>
-
               {
                 difficultyDistribution
                   .Medium
@@ -988,7 +1199,6 @@ function TestPreviewPage() {
                 testSummary
                   .medium
               }
-
             </strong>
 
           </article>
@@ -1017,7 +1227,6 @@ function TestPreviewPage() {
                   Hard
                 </strong>
 
-
                 <small>
                   Advanced
                 </small>
@@ -1028,7 +1237,6 @@ function TestPreviewPage() {
 
 
             <strong>
-
               {
                 difficultyDistribution
                   .Hard
@@ -1038,7 +1246,6 @@ function TestPreviewPage() {
                 testSummary
                   .hard
               }
-
             </strong>
 
           </article>
@@ -1101,15 +1308,11 @@ function TestPreviewPage() {
                 :
 
                 (
-
                   <p>
-
                     No topic
                     information
                     is available.
-
                   </p>
-
                 )
             }
 
@@ -1138,18 +1341,14 @@ function TestPreviewPage() {
               GENERATED QUESTIONS
             </span>
 
-
             <h2>
               Question lineup
             </h2>
 
-
             <p>
-
               The test contains the
               following personalized
               question set.
-
             </p>
 
           </div>
@@ -1162,13 +1361,10 @@ function TestPreviewPage() {
           >
 
             <strong>
-
               {
                 questions.length
               }
-
             </strong>
-
 
             <span>
               questions
@@ -1243,14 +1439,12 @@ function TestPreviewPage() {
 
                       <span
                         className={
-
                           `preview-difficulty-badge
                           preview-difficulty-${
                             question
                               .difficulty
                               .toLowerCase()
                           }`
-
                         }
                       >
 
@@ -1264,7 +1458,6 @@ function TestPreviewPage() {
 
                       <span
                         className={
-
                           question
                             .previouslySolved
 
@@ -1279,7 +1472,6 @@ function TestPreviewPage() {
                             "preview-history-badge "
                             +
                             "preview-history-new"
-
                         }
                       >
 
@@ -1302,12 +1494,10 @@ function TestPreviewPage() {
 
 
                     <h3>
-
                       {
                         question
                           .title
                       }
-
                     </h3>
 
                   </div>
@@ -1355,13 +1545,10 @@ function TestPreviewPage() {
               Before you start
             </h2>
 
-
             <p>
-
               A few things to know
               before beginning your
               mock test.
-
             </p>
 
           </div>
@@ -1381,13 +1568,10 @@ function TestPreviewPage() {
               01
             </strong>
 
-
             <p>
-
               The timer starts
               immediately after you
               click Start Mock Test.
-
             </p>
 
           </div>
@@ -1399,13 +1583,10 @@ function TestPreviewPage() {
               02
             </strong>
 
-
             <p>
-
               Your test is submitted
               automatically when the
               time limit expires.
-
             </p>
 
           </div>
@@ -1417,14 +1598,11 @@ function TestPreviewPage() {
               03
             </strong>
 
-
             <p>
-
               Use the LeetCode link
               provided during the
               test to solve each
               question.
-
             </p>
 
           </div>
@@ -1436,13 +1614,10 @@ function TestPreviewPage() {
               04
             </strong>
 
-
             <p>
-
               Mark every attempted
               question before
               submitting your test.
-
             </p>
 
           </div>
@@ -1516,15 +1691,21 @@ function TestPreviewPage() {
             className={
               "preview-footer-edit"
             }
+            disabled={
+              isSharing
+            }
             onClick={
-              () =>
-                navigate(
-                  "/test-configuration"
-                )
+              handleShareTest
             }
           >
 
-            Edit Test
+            {
+              isSharing
+                ?
+                "Creating Link..."
+                :
+                "Share Test"
+            }
 
           </button>
 
@@ -1552,9 +1733,7 @@ function TestPreviewPage() {
       </footer>
 
     </main>
-
   );
-
 }
 
 
