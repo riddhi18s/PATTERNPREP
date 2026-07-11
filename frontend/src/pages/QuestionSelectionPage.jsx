@@ -14,6 +14,8 @@ import questions from "../data/leetcode_questions.json";
 const API_URL =
   "https://patternprep.onrender.com";
 
+const QUESTIONS_PER_PAGE = 50;
+
 
 function QuestionSelectionPage() {
   const navigate =
@@ -24,6 +26,12 @@ function QuestionSelectionPage() {
     search,
     setSearch,
   ] = useState("");
+
+
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(1);
 
 
   const [
@@ -69,9 +77,7 @@ function QuestionSelectionPage() {
 
 
   useEffect(() => {
-
     async function loadSolvedQuestions() {
-
       const accessToken =
         localStorage.getItem(
           "accessToken"
@@ -79,7 +85,6 @@ function QuestionSelectionPage() {
 
 
       if (!accessToken) {
-
         navigate(
           "/login",
           {
@@ -88,12 +93,10 @@ function QuestionSelectionPage() {
         );
 
         return;
-
       }
 
 
       try {
-
         const response =
           await fetch(
             `${API_URL}/progress/solved-questions`,
@@ -113,16 +116,13 @@ function QuestionSelectionPage() {
           ===
           401
         ) {
-
           localStorage.removeItem(
             "accessToken"
           );
 
-
           localStorage.removeItem(
             "user"
           );
-
 
           navigate(
             "/login",
@@ -131,18 +131,14 @@ function QuestionSelectionPage() {
             }
           );
 
-
           return;
-
         }
 
 
         if (!response.ok) {
-
           throw new Error(
             "Could not load solved questions."
           );
-
         }
 
 
@@ -154,18 +150,14 @@ function QuestionSelectionPage() {
           Array.isArray(
             data.question_ids
           )
-
             ?
-
             data.question_ids.map(
               (questionId) =>
                 String(
                   questionId
                 )
             )
-
             :
-
             [];
 
 
@@ -183,7 +175,6 @@ function QuestionSelectionPage() {
         );
 
       } catch {
-
         const saved =
           localStorage.getItem(
             "solvedQuestionIds"
@@ -191,9 +182,7 @@ function QuestionSelectionPage() {
 
 
         if (saved) {
-
           try {
-
             const parsedIds =
               JSON.parse(
                 saved
@@ -205,7 +194,6 @@ function QuestionSelectionPage() {
                 parsedIds
               )
             ) {
-
               setSolvedQuestionIds(
                 parsedIds.map(
                   (questionId) =>
@@ -214,17 +202,13 @@ function QuestionSelectionPage() {
                     )
                 )
               );
-
             }
 
           } catch {
-
             setSolvedQuestionIds(
               []
             );
-
           }
-
         }
 
 
@@ -235,13 +219,10 @@ function QuestionSelectionPage() {
         );
 
       } finally {
-
         setIsLoading(
           false
         );
-
       }
-
     }
 
 
@@ -252,27 +233,35 @@ function QuestionSelectionPage() {
   ]);
 
 
+  useEffect(
+    () => {
+      setCurrentPage(1);
+    },
+    [
+      search,
+      selectedTopic,
+      selectedDifficulty,
+      showSolvedOnly,
+    ]
+  );
+
+
   const topics =
     useMemo(
       () => {
-
         const topicSet =
           new Set();
 
 
         questions.forEach(
           (question) => {
-
             question.topics.forEach(
               (topic) => {
-
                 topicSet.add(
                   topic
                 );
-
               }
             );
-
           }
         );
 
@@ -291,20 +280,27 @@ function QuestionSelectionPage() {
   const filteredQuestions =
     useMemo(
       () => {
-
         const normalizedSearch =
           search
             .trim()
-            .toLowerCase();
+            .toLowerCase()
+            .replace(
+              /^#/,
+              ""
+            );
 
 
         return questions.filter(
           (question) => {
-
             const normalizedId =
               String(
                 question.id
               );
+
+
+            const normalizedTitle =
+              question.title
+                .toLowerCase();
 
 
             const matchesSearch =
@@ -314,8 +310,14 @@ function QuestionSelectionPage() {
 
               ||
 
-              question.title
-                .toLowerCase()
+              normalizedId
+                .includes(
+                  normalizedSearch
+                )
+
+              ||
+
+              normalizedTitle
                 .includes(
                   normalizedSearch
                 );
@@ -374,7 +376,6 @@ function QuestionSelectionPage() {
 
               matchesSolved
             );
-
           }
         );
 
@@ -389,10 +390,48 @@ function QuestionSelectionPage() {
     );
 
 
+  const totalPages =
+    Math.max(
+      1,
+
+      Math.ceil(
+        filteredQuestions.length
+        /
+        QUESTIONS_PER_PAGE
+      )
+    );
+
+
+  const safeCurrentPage =
+    Math.min(
+      currentPage,
+      totalPages
+    );
+
+
+  const firstQuestionIndex =
+    (
+      safeCurrentPage
+      -
+      1
+    )
+    *
+    QUESTIONS_PER_PAGE;
+
+
+  const visibleQuestions =
+    filteredQuestions.slice(
+      firstQuestionIndex,
+
+      firstQuestionIndex
+      +
+      QUESTIONS_PER_PAGE
+    );
+
+
   const difficultySummary =
     useMemo(
       () => {
-
         let easy = 0;
 
         let medium = 0;
@@ -402,7 +441,6 @@ function QuestionSelectionPage() {
 
         questions.forEach(
           (question) => {
-
             const normalizedId =
               String(
                 question.id
@@ -415,9 +453,7 @@ function QuestionSelectionPage() {
                   normalizedId
                 )
             ) {
-
               return;
-
             }
 
 
@@ -431,9 +467,7 @@ function QuestionSelectionPage() {
               ===
               "easy"
             ) {
-
               easy += 1;
-
             }
 
 
@@ -442,9 +476,7 @@ function QuestionSelectionPage() {
               ===
               "medium"
             ) {
-
               medium += 1;
-
             }
 
 
@@ -453,11 +485,8 @@ function QuestionSelectionPage() {
               ===
               "hard"
             ) {
-
               hard += 1;
-
             }
-
           }
         );
 
@@ -478,7 +507,6 @@ function QuestionSelectionPage() {
   function toggleSolvedQuestion(
     questionId
   ) {
-
     const normalizedId =
       String(
         questionId
@@ -487,20 +515,17 @@ function QuestionSelectionPage() {
 
     setSolvedQuestionIds(
       (currentIds) => {
-
         if (
           currentIds.includes(
             normalizedId
           )
         ) {
-
           return currentIds.filter(
             (id) =>
               id
               !==
               normalizedId
           );
-
         }
 
 
@@ -508,18 +533,15 @@ function QuestionSelectionPage() {
           ...currentIds,
           normalizedId,
         ];
-
       }
     );
 
 
     setMessage("");
-
   }
 
 
   function clearFilters() {
-
     setSearch("");
 
     setSelectedTopic(
@@ -534,11 +556,55 @@ function QuestionSelectionPage() {
       false
     );
 
+    setCurrentPage(1);
+  }
+
+
+  function goToPreviousPage() {
+    setCurrentPage(
+      (
+        currentPageValue
+      ) =>
+        Math.max(
+          1,
+
+          currentPageValue
+          -
+          1
+        )
+    );
+
+
+    window.scrollTo({
+      top: 650,
+      behavior: "smooth",
+    });
+  }
+
+
+  function goToNextPage() {
+    setCurrentPage(
+      (
+        currentPageValue
+      ) =>
+        Math.min(
+          totalPages,
+
+          currentPageValue
+          +
+          1
+        )
+    );
+
+
+    window.scrollTo({
+      top: 650,
+      behavior: "smooth",
+    });
   }
 
 
   async function saveSolvedQuestions() {
-
     const accessToken =
       localStorage.getItem(
         "accessToken"
@@ -546,7 +612,6 @@ function QuestionSelectionPage() {
 
 
     if (!accessToken) {
-
       navigate(
         "/login",
         {
@@ -556,7 +621,6 @@ function QuestionSelectionPage() {
 
 
       return false;
-
     }
 
 
@@ -569,7 +633,6 @@ function QuestionSelectionPage() {
 
 
     try {
-
       const response =
         await fetch(
           `${API_URL}/progress/solved-questions`,
@@ -598,16 +661,13 @@ function QuestionSelectionPage() {
         ===
         401
       ) {
-
         localStorage.removeItem(
           "accessToken"
         );
 
-
         localStorage.removeItem(
           "user"
         );
-
 
         navigate(
           "/login",
@@ -618,12 +678,10 @@ function QuestionSelectionPage() {
 
 
         return false;
-
       }
 
 
       if (!response.ok) {
-
         const errorData =
           await response
             .json()
@@ -639,7 +697,6 @@ function QuestionSelectionPage() {
 
           "Could not save solved questions."
         );
-
       }
 
 
@@ -651,18 +708,14 @@ function QuestionSelectionPage() {
         Array.isArray(
           data.question_ids
         )
-
           ?
-
           data.question_ids.map(
             (questionId) =>
               String(
                 questionId
               )
           )
-
           :
-
           [];
 
 
@@ -690,7 +743,6 @@ function QuestionSelectionPage() {
     } catch (
       error
     ) {
-
       localStorage.setItem(
         "solvedQuestionIds",
 
@@ -712,44 +764,33 @@ function QuestionSelectionPage() {
       return false;
 
     } finally {
-
       setIsSaving(
         false
       );
-
     }
-
   }
 
 
   async function handleSave() {
-
     await saveSolvedQuestions();
-
   }
 
 
   async function handleSaveAndContinue() {
-
     const saved =
       await saveSolvedQuestions();
 
 
     if (saved) {
-
       navigate(
         "/test-configuration"
       );
-
     }
-
   }
 
 
   if (isLoading) {
-
     return (
-
       <main
         className={
           "question-loading-page"
@@ -774,21 +815,16 @@ function QuestionSelectionPage() {
 
 
         <p>
-
           Retrieving your saved
           solved questions...
-
         </p>
 
       </main>
-
     );
-
   }
 
 
   return (
-
     <main
       className={
         "question-page"
@@ -993,10 +1029,8 @@ function QuestionSelectionPage() {
 
 
           <p>
-
             questions marked
             as completed
-
           </p>
 
 
@@ -1015,12 +1049,10 @@ function QuestionSelectionPage() {
               />
 
               <strong>
-
                 {
                   difficultySummary
                     .easy
                 }
-
               </strong>
 
               <small>
@@ -1039,12 +1071,10 @@ function QuestionSelectionPage() {
               />
 
               <strong>
-
                 {
                   difficultySummary
                     .medium
                 }
-
               </strong>
 
               <small>
@@ -1063,12 +1093,10 @@ function QuestionSelectionPage() {
               />
 
               <strong>
-
                 {
                   difficultySummary
                     .hard
                 }
-
               </strong>
 
               <small>
@@ -1104,20 +1132,17 @@ function QuestionSelectionPage() {
 
 
             <h2>
-
               Select solved
               questions
-
             </h2>
 
 
             <p>
-
-              Search by title or
+              Search by LeetCode
+              number or title, or
               narrow the list using
               topic and difficulty
               filters.
-
             </p>
 
           </div>
@@ -1130,12 +1155,10 @@ function QuestionSelectionPage() {
           >
 
             <strong>
-
               {
                 filteredQuestions
                   .length
               }
-
             </strong>
 
 
@@ -1154,7 +1177,6 @@ function QuestionSelectionPage() {
           &&
 
           (
-
             <div
               className={
                 "question-message"
@@ -1172,7 +1194,6 @@ function QuestionSelectionPage() {
               </p>
 
             </div>
-
           )
         }
 
@@ -1198,7 +1219,7 @@ function QuestionSelectionPage() {
               id="question-search"
               type="search"
               placeholder={
-                "Search by question title..."
+                "Search by number or title..."
               }
               value={
                 search
@@ -1212,7 +1233,7 @@ function QuestionSelectionPage() {
                   )
               }
               aria-label={
-                "Search by question title"
+                "Search by LeetCode question number or title"
               }
             />
 
@@ -1247,7 +1268,6 @@ function QuestionSelectionPage() {
             {
               topics.map(
                 (topic) => (
-
                   <option
                     key={
                       topic
@@ -1256,11 +1276,8 @@ function QuestionSelectionPage() {
                       topic
                     }
                   >
-
                     {topic}
-
                   </option>
-
                 )
               )
             }
@@ -1387,171 +1404,292 @@ function QuestionSelectionPage() {
             ?
 
             (
+              <>
 
-              <div
-                className={
-                  "question-list"
-                }
-              >
+                <div
+                  className={
+                    "question-list"
+                  }
+                >
 
-                {
-                  filteredQuestions.map(
-                    (
-                      question,
-                      index
-                    ) => {
-
-                      const normalizedId =
-                        String(
-                          question.id
-                        );
-
-
-                      const isSolved =
-                        solvedQuestionIds
-                          .includes(
-                            normalizedId
+                  {
+                    visibleQuestions.map(
+                      (
+                        question,
+                        index
+                      ) => {
+                        const normalizedId =
+                          String(
+                            question.id
                           );
 
 
-                      return (
+                        const isSolved =
+                          solvedQuestionIds
+                            .includes(
+                              normalizedId
+                            );
 
-                        <article
-                          key={
-                            question
-                              .titleSlug
-                          }
-                          className={
-                            isSolved
 
-                              ?
-
-                              "question-card "
-                              +
-                              "question-card-solved"
-
-                              :
-
-                              "question-card"
-                          }
-                          style={{
-                            "--question-delay":
-                              `${
-                                Math.min(
-                                  index,
-                                  20
-                                )
-                                *
-                                20
-                              }ms`,
-                          }}
-                        >
-
-                          <label
-                            className={
-                              "question-check"
+                        return (
+                          <article
+                            key={
+                              question
+                                .titleSlug
                             }
+                            className={
+                              isSolved
+
+                                ?
+
+                                "question-card "
+                                +
+                                "question-card-solved"
+
+                                :
+
+                                "question-card"
+                            }
+                            style={{
+                              "--question-delay":
+                                `${
+                                  Math.min(
+                                    index,
+                                    20
+                                  )
+                                  *
+                                  20
+                                }ms`,
+                            }}
                           >
 
-                            <input
-                              type={
-                                "checkbox"
-                              }
-                              checked={
-                                isSolved
-                              }
-                              onChange={
-                                () =>
-                                  toggleSolvedQuestion(
-                                    question.id
-                                  )
-                              }
-                            />
-
-
-                            <span
+                            <label
                               className={
-                                "question-custom-checkbox"
+                                "question-check"
                               }
                             >
-                              ✓
-                            </span>
 
-                          </label>
-
-
-                          <div
-                            className={
-                              "question-card-content"
-                            }
-                          >
-
-                            <h3>
-
-                              {
-                                question
-                                  .title
-                              }
-
-                            </h3>
+                              <input
+                                type={
+                                  "checkbox"
+                                }
+                                checked={
+                                  isSolved
+                                }
+                                onChange={
+                                  () =>
+                                    toggleSolvedQuestion(
+                                      question.id
+                                    )
+                                }
+                              />
 
 
-                            <span
+                              <span
+                                className={
+                                  "question-custom-checkbox"
+                                }
+                              >
+                                ✓
+                              </span>
+
+                            </label>
+
+
+                            <div
                               className={
-                                `question-difficulty
-                                question-difficulty-${
+                                "question-card-content"
+                              }
+                            >
+
+                              <div
+                                className={
+                                  "question-title-row"
+                                }
+                              >
+
+                                <span
+                                  className={
+                                    "question-number"
+                                  }
+                                >
+
+                                  #
+                                  {
+                                    question.id
+                                  }
+
+                                </span>
+
+
+                                <h3>
+                                  {
+                                    question
+                                      .title
+                                  }
+                                </h3>
+
+                              </div>
+
+
+                              <span
+                                className={
+                                  `question-difficulty
+                                  question-difficulty-${
+                                    question
+                                      .difficulty
+                                      .toLowerCase()
+                                  }`
+                                }
+                              >
+
+                                {
                                   question
                                     .difficulty
-                                    .toLowerCase()
-                                }`
+                                }
+
+                              </span>
+
+                            </div>
+
+
+                            <a
+                              href={
+                                question.url
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className={
+                                "question-leetcode-link"
                               }
                             >
 
-                              {
-                                question
-                                  .difficulty
-                              }
+                              Solve on LeetCode
 
-                            </span>
+                              <span>
+                                ↗
+                              </span>
 
-                          </div>
+                            </a>
+
+                          </article>
+                        );
+                      }
+                    )
+                  }
+
+                </div>
 
 
-                          <a
-                            href={
-                              question.url
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className={
-                              "question-leetcode-link"
-                            }
-                          >
+                <div
+                  className={
+                    "question-pagination"
+                  }
+                >
 
-                            Solve on LeetCode
-
-                            <span>
-                              ↗
-                            </span>
-
-                          </a>
-
-                        </article>
-
-                      );
-
+                  <button
+                    type="button"
+                    disabled={
+                      safeCurrentPage
+                      ===
+                      1
                     }
-                  )
-                }
+                    onClick={
+                      goToPreviousPage
+                    }
+                  >
 
-              </div>
+                    ← Previous
 
+                  </button>
+
+
+                  <div
+                    className={
+                      "question-page-details"
+                    }
+                  >
+
+                    <strong>
+
+                      Page
+
+                      {" "}
+
+                      {
+                        safeCurrentPage
+                      }
+
+                      {" of "}
+
+                      {
+                        totalPages
+                      }
+
+                    </strong>
+
+
+                    <span>
+
+                      Showing
+
+                      {" "}
+
+                      {
+                        firstQuestionIndex
+                        +
+                        1
+                      }
+
+                      {"–"}
+
+                      {
+                        Math.min(
+                          firstQuestionIndex
+                          +
+                          QUESTIONS_PER_PAGE,
+
+                          filteredQuestions
+                            .length
+                        )
+                      }
+
+                      {" of "}
+
+                      {
+                        filteredQuestions
+                          .length
+                      }
+
+                    </span>
+
+                  </div>
+
+
+                  <button
+                    type="button"
+                    disabled={
+                      safeCurrentPage
+                      ===
+                      totalPages
+                    }
+                    onClick={
+                      goToNextPage
+                    }
+                  >
+
+                    Next →
+
+                  </button>
+
+                </div>
+
+              </>
             )
 
             :
 
             (
-
               <div
                 className={
                   "question-empty-state"
@@ -1569,11 +1707,11 @@ function QuestionSelectionPage() {
 
 
                 <p>
-
-                  Try another title
-                  or remove the
-                  selected filters.
-
+                  Try another
+                  question number,
+                  title, or remove
+                  the selected
+                  filters.
                 </p>
 
 
@@ -1589,7 +1727,6 @@ function QuestionSelectionPage() {
                 </button>
 
               </div>
-
             )
         }
 
@@ -1616,12 +1753,10 @@ function QuestionSelectionPage() {
           <p>
 
             <strong>
-
               {
                 solvedQuestionIds
                   .length
               }
-
             </strong>
 
             {" "}
@@ -1712,9 +1847,7 @@ function QuestionSelectionPage() {
       </footer>
 
     </main>
-
   );
-
 }
 
 
