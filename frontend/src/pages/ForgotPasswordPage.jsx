@@ -7,6 +7,10 @@ import {
 } from "react-router-dom";
 
 
+const API_URL =
+  "https://patternprep.onrender.com";
+
+
 function ForgotPasswordPage() {
   const navigate =
     useNavigate();
@@ -51,7 +55,7 @@ function ForgotPasswordPage() {
     try {
       const response =
         await fetch(
-          "http://127.0.0.1:8000/api/auth/forgot-password",
+          `${API_URL}/api/auth/forgot-password`,
           {
             method:
               "POST",
@@ -134,7 +138,7 @@ function ForgotPasswordPage() {
 
     } catch {
       setMessage(
-        "Could not connect to the PatternPrep server. Make sure the backend is running."
+        "Could not connect to the PatternPrep server. Please try again."
       );
 
       setMessageType(

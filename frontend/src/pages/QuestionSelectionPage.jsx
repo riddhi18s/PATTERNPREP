@@ -12,7 +12,7 @@ import questions from "../data/leetcode_questions.json";
 
 
 const API_URL =
-  "http://127.0.0.1:8000";
+  "https://patternprep.onrender.com";
 
 
 function QuestionSelectionPage() {

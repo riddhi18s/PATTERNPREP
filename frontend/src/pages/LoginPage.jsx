@@ -7,6 +7,10 @@ import {
 } from "react-router-dom";
 
 
+const API_URL =
+  "https://patternprep.onrender.com";
+
+
 function LoginPage() {
   const navigate =
     useNavigate();
@@ -63,7 +67,7 @@ function LoginPage() {
     try {
       const response =
         await fetch(
-          "http://127.0.0.1:8000/api/auth/login",
+          `${API_URL}/api/auth/login`,
           {
             method:
               "POST",
@@ -151,7 +155,7 @@ function LoginPage() {
 
     } catch {
       setMessage(
-        "Could not connect to the PatternPrep server. Make sure the backend is running."
+        "Could not connect to the PatternPrep server. Please try again."
       );
 
       setMessageType(
